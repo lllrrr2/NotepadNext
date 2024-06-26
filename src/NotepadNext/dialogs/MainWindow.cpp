@@ -96,6 +96,8 @@ MainWindow::MainWindow(NotepadNextApplication *app) :
 
     ui->setupUi(this);
 
+    applyCustomShortcuts();
+
     qInfo("setupUi Completed");
 
     connect(this, &MainWindow::aboutToClose, this, &MainWindow::saveSettings);
@@ -792,6 +794,27 @@ MainWindow::MainWindow(NotepadNextApplication *app) :
 MainWindow::~MainWindow()
 {
     delete ui;
+}
+
+void MainWindow::applyCustomShortcuts()
+{
+    ApplicationSettings *settings = app->getSettings();
+
+    settings->beginGroup("Shortcuts");
+
+    for (const QString &actionName : settings->childKeys()) {
+        QAction *action = findChild<QAction *>(QStringLiteral("action") + actionName, Qt::FindDirectChildrenOnly);
+        const QString shortcutString = settings->value(actionName).toString();
+
+        if (action != Q_NULLPTR) {
+            action->setShortcut(QKeySequence(shortcutString));
+        }
+        else {
+            qWarning() << "Cannot find action" << actionName;
+        }
+    }
+
+    settings->endGroup();
 }
 
 void MainWindow::setupLanguageMenu()
@@ -1986,25 +2009,25 @@ void MainWindow::tabBarRightClicked(ScintillaNext *editor)
 
     // Default actions
     QStringList actionNames{
-        "actionClose",
-        "actionCloseAllExceptActive",
-        "actionCloseAllToLeft",
-        "actionCloseAllToRight",
+        "Close",
+        "CloseAllExceptActive",
+        "CloseAllToLeft",
+        "CloseAllToRight",
         "",
-        "actionSave",
-        "actionSaveAs",
-        "actionRename",
+        "Save",
+        "SaveAs",
+        "Rename",
         "",
-        "actionReload",
+        "Reload",
         "",
 #ifdef Q_OS_WIN
-        "actionShowInExplorer",
-        "actionOpenCommandPromptHere",
+        "ShowInExplorer",
+        "OpenCommandPromptHere",
         "",
 #endif
-        "actionCopyFullPath",
-        "actionCopyFileName",
-        "actionCopyFileDirectory"
+        "CopyFullPath",
+        "CopyFileName",
+        "CopyFileDirectory"
     };
 
     // If the entry exists in the settings, use that
@@ -2019,7 +2042,7 @@ void MainWindow::tabBarRightClicked(ScintillaNext *editor)
             menu->addSeparator();
         }
         else {
-            QAction *a = findChild<QAction *>(actionName, Qt::FindDirectChildrenOnly);
+            QAction *a = findChild<QAction *>(QStringLiteral("action") + actionName, Qt::FindDirectChildrenOnly);
 
             if (a != Q_NULLPTR) {
                 menu->addAction(a);
